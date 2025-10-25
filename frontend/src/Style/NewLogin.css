@@ -1,0 +1,158 @@
+/* Converted from your HTML inline styles */
+* {
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #10b981;
+  z-index: 999;
+  padding: 20px;
+}
+
+.auth-container {
+  width: 90%;
+  max-width: 400px;
+  aspect-ratio: 9 / 16;
+  background: #10b981;
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  padding: 32px 20px;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.branding {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.branding-icon {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.branding h2 {
+  margin-top: 10px;
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+}
+
+.form-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#auth-form input,
+#auth-form select {
+  padding: 14px 16px;
+  border: 1px solid #d1fae5;
+  border-radius: 16px;
+  font-size: 14px;
+  background-color: #fff;
+  color: #1f2937;
+  outline: none;
+  width: 100%;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#auth-form input:focus,
+#auth-form select:focus {
+  border-color: #10b981;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2), 0 0 8px rgba(16,185,129,0.2);
+}
+
+/* button */
+#auth-form button {
+  background: linear-gradient(135deg, #2dd4bf, #059669);
+  color: #fff;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(5,150,105,0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#auth-form button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+#auth-form button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 12px rgba(5,150,105,0.4);
+}
+
+/* switch link */
+.switch-link {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #fff;
+}
+
+.link-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+/* error */
+.auth-error {
+  color: #fee2e2;
+  background: rgba(255,255,255,0.06);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+/* placeholder app after auth */
+.phone-container.placeholder-app {
+  width: 90%;
+  max-width: 400px;
+  aspect-ratio: 9 / 16;
+  margin: 20px auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  padding: 20px;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #111827;
+}

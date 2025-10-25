@@ -25,15 +25,15 @@ export default function App() {
         <BrowserRouter>
             <div style={{ fontFamily: "system-ui, sans-serif", padding: 20 }}>
                 <nav style={{ marginBottom: 20 }}>
-                    <Link to="/" style={{ marginRight: 12 }}>Home</Link>
+                    <Link to="/home" style={{ marginRight: 12 }}>Home</Link>
                     <Link to="/about" style={{ marginRight: 12 }}>About</Link>
-                    <Link to="/login">Login</Link>
+                    <Link to="/" style={{ marginRight: 12 }}>Login</Link>
                 </nav>
 
                 <Routes>
-                    <Route path="/" element={<Home />} />
+                    <Route path="/" element={<Login />} />
+                    <Route path="/home" element={<Home />} />
                     <Route path="/about" element={<About />} />
-                    <Route path="/login" element={<Login />} />
                 </Routes>
             </div>
         </BrowserRouter>

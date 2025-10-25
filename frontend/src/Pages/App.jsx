@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import Login from "./Login";
 
 function Home() {
     return (
@@ -25,12 +26,14 @@ export default function App() {
             <div style={{ fontFamily: "system-ui, sans-serif", padding: 20 }}>
                 <nav style={{ marginBottom: 20 }}>
                     <Link to="/" style={{ marginRight: 12 }}>Home</Link>
-                    <Link to="/about">About</Link>
+                    <Link to="/about" style={{ marginRight: 12 }}>About</Link>
+                    <Link to="/login">Login</Link>
                 </nav>
 
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/about" element={<About />} />
+                    <Route path="/login" element={<Login />} />
                 </Routes>
             </div>
         </BrowserRouter>

@@ -1,36 +1,41 @@
-from fastapi import FastAPI, HTTPException, Depends, Request, Response, Cookie
+from fastapi import FastAPI, HTTPException, Request, Body
 from fastapi.responses import JSONResponse
-import requests
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import timedelta
-from typing import Annotated, Optional
-
-from sqlalchemy import select
-import models
-from models import *
-import database
-from database import engine, get_db
-from sqlalchemy.orm import Session
-from schemas import *
-from json import dumps
-from helpers import *
 
 app = FastAPI()
-origins = [
-    "http://localhost:3000"
-]
+
+origins = ["http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,  # Allow cookies and credentials to be sent
-    allow_methods=["*"],     # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],     # Allow all headers in the request
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-    
-database.Base.metadata.create_all(bind=engine)
 
-db_dependency = Annotated[Session, Depends(get_db)]
+@app.get("/")
+async def health():
+    return {"status": "ok"}
 
-@app.get("/test")
-async def test(subpath: str, request: Request):
-    pass
+@app.post("/login")
+async def login(payload: dict = Body(...), request: Request = None):
+    """
+    Simple login stub. Expects JSON: { "username": "...", "password": "..." }
+    """
+    username = payload.get("username") or payload.get("email")
+    password = payload.get("password")
+
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="username and password required")
+
+    if username == "test" and password == "test":
+        response = JSONResponse(
+            content={"message": "Login successful", "access_token": "dummy_token"}
+        )
+        response.set_cookie(
+            key="session_id", value="dummy_session_token", httponly=True, max_age=1800
+        )
+        return response
+
+    raise HTTPException(status_code=401, detail="Invalid credentials")

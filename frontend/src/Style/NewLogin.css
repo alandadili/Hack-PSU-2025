@@ -10,23 +10,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #10b981;
+  /* subtle backdrop that doesn't overwrite the phone frame */
+  background: linear-gradient(180deg, rgba(16,185,129,0.08), rgba(16,185,129,0.12));
   z-index: 999;
   padding: 20px;
-}
-
-.auth-container {
-  width: 90%;
-  max-width: 400px;
-  aspect-ratio: 9 / 16;
-  background: #10b981;
-  border-radius: 30px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  display: flex;
-  flex-direction: column;
-  padding: 32px 20px;
-  justify-content: space-between;
-  color: #fff;
 }
 
 .branding {
@@ -70,10 +57,10 @@
 
 #auth-form input,
 #auth-form select {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border: 1px solid #d1fae5;
   border-radius: 16px;
-  font-size: 14px;
+  font-size: 16px;
   background-color: #fff;
   color: #1f2937;
   outline: none;
@@ -142,12 +129,14 @@
 
 /* placeholder app after auth */
 .phone-container.placeholder-app {
-  width: 90%;
+  /* match Home.css phone-container sizing exactly */
+  width: 100%;
   max-width: 400px;
   aspect-ratio: 9 / 16;
+  max-height: 800px;
   margin: 20px auto;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 30px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   padding: 20px;
 }
@@ -155,4 +144,17 @@
 .placeholder-content {
   text-align: center;
   color: #111827;
+}
+
+/* Make a header area inside the phone frame for the login branding */
+.phone-container .branding {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  padding: 20px 16px;
+  border-radius: 0 0 20px 20px;
+  color: white;
+}
+
+.phone-container .branding h2 {
+  margin: 0;
+  color: white;
 }

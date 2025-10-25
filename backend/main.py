@@ -7,7 +7,13 @@ import time
 
 app = FastAPI()
 
-origins = ["http://localhost:3000"]
+# Allow local dev origins (React may run on 3000 or 3001). Add 127.0.0.1 variants as well.
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
 
 app.add_middleware(
     CORSMiddleware,

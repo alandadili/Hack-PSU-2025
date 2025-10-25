@@ -16,8 +16,10 @@ body {
 
 .phone-container {
     max-width: 400px;
-    width: 100%;
-    height: 800px;
+    width: 400px; /* fixed design width for consistent sizing */
+    max-width: 90vw; /* shrink on very small viewports */
+    aspect-ratio: 9 / 16; /* responsive 9:16 mobile frame */
+    max-height: 800px; /* limit on tall screens */
     background: white;
     border-radius: 30px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
@@ -36,6 +38,19 @@ body {
 
 .screen::-webkit-scrollbar {
     width: 0;
+}
+
+/* Small wrapper used to animate route/page transitions */
+.screen-frame {
+    transition: opacity 260ms ease, transform 260ms ease;
+}
+.screen-frame.exit {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.screen-frame.enter {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .hidden {

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import "../Style/NewLogin.css";
+import "../Style/Home.css"; // Import Home's phone-container styles
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8001";
 
 export default function NewLogin({ onAuth }) {
   const [isRegister, setIsRegister] = useState(false);
@@ -76,78 +77,76 @@ export default function NewLogin({ onAuth }) {
   }
 
   return (
-    <div className="auth-screen">
-      <div className="auth-container" role="dialog" aria-label="Authentication">
-        <div className="branding">
-          <div className="branding-icon">🚀</div>
-          <h2>FitTrack</h2>
-        </div>
-
-        <div className="form-container">
-          <form id="auth-form" onSubmit={handleSubmit}>
-            {isRegister && (
-              <div id="name-field">
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  type="text"
-                  placeholder="Full Name"
-                  required
-                />
-              </div>
-            )}
-
-            {isRegister && (
-              <div id="additional-fields">
-                <select value={sex} onChange={(e) => setSex(e.target.value)} required>
-                  <option value="">Select Sex</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-                <input
-                  type="number"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  placeholder="Age"
-                  min="1"
-                  max="120"
-                  required
-                />
-              </div>
-            )}
-
-            <input
-              type="username"
-              value={username}
-              onChange={(e) =>  setUsername(e.target.value)}
-              placeholder="Username"
-              required
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-            />
-
-            {error && <div className="auth-error">{error}</div>}
-
-            <button type="submit" disabled={loading}>
-              {loading ? "Please wait…" : isRegister ? "Register" : "Login"}
-            </button>
-          </form>
-        </div>
-
-        <div className="switch-link" onClick={toggleMode}>
-          {isRegister ? (
-            <span>Already have an account? <button className="link-btn">Login</button></span>
-          ) : (
-            <span>Don't have an account? <button className="link-btn">Register</button></span>
-          )}
-        </div>
+    <>
+      <div className="branding">
+        <div className="branding-icon">🚀</div>
+        <h2>FitTrack</h2>
       </div>
-    </div>
+
+      <div className="form-container" style={{ padding: 8 }}>
+        <form id="auth-form" onSubmit={handleSubmit}>
+          {isRegister && (
+            <div id="name-field">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                type="text"
+                placeholder="Full Name"
+                required
+              />
+            </div>
+          )}
+
+          {isRegister && (
+            <div id="additional-fields">
+              <select value={sex} onChange={(e) => setSex(e.target.value)} required>
+                <option value="">Select Sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="Age"
+                min="1"
+                max="120"
+                required
+              />
+            </div>
+          )}
+
+          <input
+            type="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+            required
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+          />
+
+          {error && <div className="auth-error">{error}</div>}
+
+          <button type="submit" disabled={loading}>
+            {loading ? "Please wait…" : isRegister ? "Register" : "Login"}
+          </button>
+        </form>
+      </div>
+
+      <div className="switch-link" onClick={toggleMode} style={{ paddingBottom: 12 }}>
+        {isRegister ? (
+          <span>Already have an account? <button className="link-btn">Login</button></span>
+        ) : (
+          <span>Don't have an account? <button className="link-btn">Register</button></span>
+        )}
+      </div>
+    </>
   );
 }

@@ -284,12 +284,6 @@ body {
     color: #1f2937;
 }
 
-.view-all {
-    color: #10b981;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-}
 
 .workout-card {
     background: white;
@@ -484,6 +478,89 @@ body {
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
+
+/* Polished circular icon: subtle inner gradient and hover ring using CSS variable set inline */
+.exercise-icon {
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(0,0,0,0.06));
+    position: relative;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.exercise-icon::before {
+    /* inner soft highlight */
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 6px 12px rgba(0,0,0,0.12);
+    pointer-events: none;
+}
+
+.exercise-icon:hover {
+    transform: translateY(-4px) scale(1.03);
+    /* ring uses CSS variable --ring set on element style: --ring: #10b981 */
+    box-shadow: 0 6px 20px rgba(2,6,23,0.12), 0 0 0 6px var(--ring, rgba(16,185,129,0.18));
+}
+
+/* Snackbar */
+.snackbar {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    bottom: 24px;
+    background: #0f172a;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 260px;
+    box-shadow: 0 8px 30px rgba(2,6,23,0.4);
+    transition: transform 0.28s cubic-bezier(.2,.9,.2,1), opacity 0.2s;
+    opacity: 0;
+    z-index: 120;
+}
+
+.snackbar.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.snackbar-msg { font-size: 14px; }
+.snackbar-undo {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.14);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Modal */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,6,23,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+.modal-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 92%;
+    max-width: 420px;
+    box-shadow: 0 12px 40px rgba(2,6,23,0.2);
+}
+.modal-card h3 { margin: 0 0 8px 0; }
+.modal-card p { color: #374151; margin-bottom: 16px; }
+.modal-actions { display:flex; gap:12px; justify-content:flex-end }
+.btn { padding: 8px 12px; border-radius: 8px; cursor: pointer; border: none }
+.btn-cancel { background: #f3f4f6; color: #111827 }
+.btn-confirm { background: #10b981; color: white }
 
 .checkbox {
     width: 48px;

@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import uuid
 import time
-from mongoConnection import AuthUsers
+from datetime import datetime
+from mongoConnection import AuthUsers, UserProfile, Workout, Exercise, WorkoutHistory
 from chatbot import handle_user_message
 
 app = FastAPI()
@@ -84,8 +85,8 @@ async def login(payload: dict = Body(...)):
         if authenticate(username, password):
             print("[LOGIN] Authentication successful, creating session...")
             
-            # Don't initialize chat on login - do it when user first chats instead
-            # This avoids crashes if API key is missing
+            # Create user profile if it doesn't exist
+            ensure_user_profile(username)
             
             sid = _create_session(username)
             response = JSONResponse(
@@ -126,9 +127,125 @@ async def logout(request: Request):
 async def me(username: str = Depends(get_current_user)):
     return {"username": username}
 
+@app.get("/profile")
+async def get_profile(username: str = Depends(get_current_user)):
+    """Get user profile data"""
+    try:
+        profile = UserProfile.objects(username=username).first()
+        if not profile:
+            profile = create_default_profile(username)
+        
+        return {
+            "username": profile.username,
+            "full_name": profile.full_name,
+            "member_since": profile.member_since.strftime("%b %Y"),
+            "goals": {
+                "weight_goal": profile.weight_goal,
+                "weekly_workout_goal": profile.weekly_workout_goal,
+                "focus_area": profile.focus_area
+            },
+            "stats": {
+                "current_streak": profile.current_streak,
+                "workouts_this_week": profile.workouts_this_week,
+                "total_workouts": profile.total_workouts,
+                "total_calories": profile.total_calories
+            },
+            "week_activity": profile.week_activity
+        }
+    except Exception as e:
+        print(f"[ERROR] Get profile error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/workouts/today")
+async def get_todays_workout(username: str = Depends(get_current_user)):
+    """Get today's assigned workout"""
+    try:
+        workout = Workout.objects(username=username, completed=False).first()
+        if not workout:
+            # Create a default workout if none exists
+            workout = create_default_workout(username)
+        
+        exercises_data = []
+        for ex in workout.exercises:
+            exercises_data.append({
+                "title": ex.title,
+                "reps": ex.reps,
+                "time": ex.time,
+                "calories": ex.calories,
+                "completed": ex.completed
+            })
+        
+        return {
+            "id": str(workout.id),
+            "title": workout.title,
+            "description": workout.description,
+            "total_time": workout.total_time,
+            "total_calories": workout.total_calories,
+            "exercises": exercises_data
+        }
+    except Exception as e:
+        print(f"[ERROR] Get workout error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/workouts/{workout_id}/complete")
+async def complete_workout(workout_id: str, payload: dict = Body(...), username: str = Depends(get_current_user)):
+    """Mark a workout as complete and update user stats"""
+    try:
+        workout = Workout.objects(id=workout_id, username=username).first()
+        if not workout:
+            raise HTTPException(status_code=404, detail="Workout not found")
+        
+        # Mark workout as complete
+        workout.completed = True
+        workout.date_completed = datetime.utcnow()
+        
+        # Update exercise completion from payload if provided
+        completed_exercises = payload.get("completed_exercises", [])
+        for i, ex in enumerate(workout.exercises):
+            if i < len(completed_exercises):
+                ex.completed = completed_exercises[i]
+        
+        workout.save()
+        
+        # Update user profile
+        profile = UserProfile.objects(username=username).first()
+        if profile:
+            profile.workouts_this_week += 1
+            profile.total_workouts += 1
+            profile.total_calories += workout.total_calories
+            profile.last_workout_date = datetime.utcnow()
+            
+            # Update week activity (0=Mon, 6=Sun)
+            day_of_week = datetime.utcnow().weekday()
+            profile.week_activity[day_of_week] = True
+            
+            # Calculate streak
+            update_streak(profile)
+            
+            profile.save()
+        
+        # Add to workout history
+        WorkoutHistory(
+            username=username,
+            workout_title=workout.title,
+            exercises_completed=sum(1 for ex in workout.exercises if ex.completed),
+            total_exercises=len(workout.exercises),
+            calories_burned=workout.total_calories,
+            duration_minutes=int(workout.total_time.split()[0]),
+            week_day=datetime.utcnow().weekday()
+        ).save()
+        
+        return {"message": "Workout completed successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Complete workout error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/chat")
 async def chat(request: Request):
-
     try:
         body = await request.json()
         text = body.get("text")
@@ -143,7 +260,7 @@ async def chat(request: Request):
     except Exception as e:
         print(f"[ERROR] Chat request failed: {str(e)}")
         raise HTTPException(status_code=504, detail="Request timed out or failed to process")
-    
+
 def authenticate(username: str, password: str) -> bool:
     """
     Simple username/password authentication with plain text passwords.
@@ -163,15 +280,10 @@ def authenticate(username: str, password: str) -> bool:
         
         if not user:
             print(f"[DEBUG] No user found for: {username}")
-            # Debug: Let's see what users exist
-            all_users = AuthUsers.objects()
-            print(f"[DEBUG] Total users in database: {all_users.count()}")
-            for u in all_users:
-                print(f"[DEBUG] Found user: username='{u.username}', email='{u.email}'")
             return False
         
         # Plain text password comparison
-        print(f"[DEBUG] Comparing passwords - Input: '{password}', Stored: '{user.password}'")
+        print(f"[DEBUG] Comparing passwords")
         is_valid = (password == user.password)
         print(f"[DEBUG] Authentication result: {is_valid}")
         return is_valid
@@ -181,3 +293,63 @@ def authenticate(username: str, password: str) -> bool:
         import traceback
         traceback.print_exc()
         return False
+
+def ensure_user_profile(username: str):
+    """Create user profile if it doesn't exist"""
+    profile = UserProfile.objects(username=username).first()
+    if not profile:
+        create_default_profile(username)
+
+def create_default_profile(username: str) -> UserProfile:
+    """Create a default user profile"""
+    profile = UserProfile(
+        username=username,
+        full_name=username.capitalize(),
+        current_streak=7,
+        workouts_this_week=4,
+        total_workouts=50,
+        total_calories=1250,
+        week_activity=[True, True, True, True, False, False, False]
+    )
+    profile.save()
+    print(f"[INFO] Created default profile for {username}")
+    return profile
+
+def create_default_workout(username: str) -> Workout:
+    """Create a default workout for a user"""
+    exercises = [
+        Exercise(title="Push-ups", reps="3x12", time="5 min", calories=45),
+        Exercise(title="Squats", reps="3x15", time="6 min", calories=60),
+        Exercise(title="Plank", reps="3x30s", time="3 min", calories=30),
+        Exercise(title="Lunges", reps="3x10", time="5 min", calories=50),
+        Exercise(title="Mountain Climbers", reps="3x20", time="4 min", calories=55),
+    ]
+    
+    workout = Workout(
+        username=username,
+        title="Full Body Strength",
+        description="Customized for you",
+        total_time="23 min",
+        total_calories=240,
+        exercises=exercises
+    )
+    workout.save()
+    print(f"[INFO] Created default workout for {username}")
+    return workout
+
+def update_streak(profile: UserProfile):
+    """Calculate and update user's workout streak"""
+    if not profile.last_workout_date:
+        profile.current_streak = 1
+        return
+    
+    days_since_last = (datetime.utcnow() - profile.last_workout_date).days
+    if days_since_last == 0:
+        # Same day, don't change streak
+        pass
+    elif days_since_last == 1:
+        # Consecutive day, increment streak
+        profile.current_streak += 1
+    else:
+        # Streak broken, reset to 1
+        profile.current_streak = 1

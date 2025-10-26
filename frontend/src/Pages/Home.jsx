@@ -1,50 +1,43 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../Style/Home.css";
 
+const API_URL = "http://localhost:8000";
+
 export default function Home() {
-  const [activeScreen, setActiveScreen] = useState("home"); // home, workout, progress, profile, chat
-  const [exercises, setExercises] = useState([
-    { id: 1, title: "Push-ups", reps: "3x12", time: "5 min", cal: 45, done: false },
-    { id: 2, title: "Squats", reps: "3x15", time: "6 min", cal: 60, done: false },
-    { id: 3, title: "Plank", reps: "3x30s", time: "3 min", cal: 30, done: false },
-    { id: 4, title: "Lunges", reps: "3x10", time: "5 min", cal: 50, done: false },
-    { id: 5, title: "Mountain Climbers", reps: "3x20", time: "4 min", cal: 55, done: false },
-  ]);
+  const [activeScreen, setActiveScreen] = useState("home");
+  const [profile, setProfile] = useState(null);
+  const [workout, setWorkout] = useState(null);
+  const [exercises, setExercises] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Chat state
-  const [messages, setMessages] = useState([]); // {from: 'user'|'bot', text}
+  const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const inputRef = useRef(null);
-  // UI state for fire tooltip
+  
+  // UI state
   const [showFireTooltip, setShowFireTooltip] = useState(false);
-  const [streak] = useState(7); // you can derive this from backend/user data later
 
-  const motivations = [
-    "Nice work — keep the momentum going!",
-    "Great streak — you're building consistency!",
-    "Awesome! Small wins add up to big gains.",
-    "You're on fire — keep pushing!",
-  ];
-  const motivation = motivations[Math.min(Math.floor(streak / 3), motivations.length - 1)];
+  const [selectedTip, setSelectedTip] = useState("");
 
-  // Pro tips to show on the home screen (choose one randomly on login)
   const proTips = [
     "Warm up for 5–10 minutes before jumping into intense exercise to reduce injury risk.",
     "Focus on controlled movements — quality beats quantity every time.",
     "Consistency matters more than intensity; stick to a routine you can maintain.",
     "Mix strength and cardio for balanced fitness and better recovery.",
     "Hydrate before, during, and after workouts to support performance and recovery.",
-    "Prioritize sleep — it’s when your body rebuilds and gets stronger.",
+    "Prioritize sleep — it's when your body rebuilds and gets stronger.",
     "Progressive overload: gradually increase reps, sets or weight to keep improving.",
     "Form first — use mirrors or record yourself to check technique.",
     "Include mobility work to improve range of motion and reduce soreness.",
     "Fuel with a small snack 30–60 minutes before a workout for steady energy.",
   ];
 
-  const [selectedTip, setSelectedTip] = useState("");
-
-  // Persist a single pro tip per browser session so it doesn't change when navigating away/back
+  // Fetch user data on mount
   useEffect(() => {
+    fetchUserData();
+    
+    // Set random pro tip
     try {
       const stored = sessionStorage.getItem("selectedTip");
       if (stored) {
@@ -54,27 +47,46 @@ export default function Home() {
         setSelectedTip(t);
         sessionStorage.setItem("selectedTip", t);
       }
-    } catch (err) {
-      // sessionStorage may be unavailable in some contexts; fall back to in-memory behavior
+    } catch {
       const t = proTips[Math.floor(Math.random() * proTips.length)];
       setSelectedTip(t);
     }
   }, []);
 
-  // Hover state for week day tooltips
-  const [hoveredDay, setHoveredDay] = useState(null);
+  async function fetchUserData() {
+    try {
+      setLoading(true);
+      
+      // Fetch profile
+      const profileRes = await fetch(`${API_URL}/profile`, {
+        credentials: 'include',
+      });
+      
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        setProfile(profileData);
+      }
 
-  // Sample week logs: exercises performed each day (index 0 = Mon)
-  // Replace with real data from backend/user history when available
-  const weekLogs = [
-    ["Push-ups — 3x12", "Squats — 3x15"], // Mon
-    ["Plank — 3x30s"],                     // Tue
-    ["Lunges — 3x10", "Mountain Climbers — 3x20"], // Wed
-    [],                                      // Thu (rest)
-    ["Light cardio — 20m"],                // Fri
-    [],                                      // Sat
-    [],                                      // Sun
-  ];
+      // Fetch today's workout
+      const workoutRes = await fetch(`${API_URL}/workouts/today`, {
+        credentials: 'include',
+      });
+      
+      if (workoutRes.ok) {
+        const workoutData = await workoutRes.json();
+        setWorkout(workoutData);
+        setExercises(workoutData.exercises.map((ex, idx) => ({
+          id: idx + 1,
+          ...ex,
+          done: ex.completed
+        })));
+      }
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function showScreen(name) {
     setActiveScreen(name);
@@ -88,6 +100,29 @@ export default function Home() {
     });
   }
 
+  async function completeWorkout() {
+    if (!workout) return;
+    
+    try {
+      const completedExercises = exercises.map(ex => ex.done);
+      
+      const res = await fetch(`${API_URL}/workouts/${workout.id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ completed_exercises: completedExercises })
+      });
+
+      if (res.ok) {
+        // Refresh user data to show updated stats
+        await fetchUserData();
+        showScreen("home");
+      }
+    } catch (err) {
+      console.error("Error completing workout:", err);
+    }
+  }
+
   useEffect(() => {
     if (activeScreen === "chat" && inputRef.current) {
       inputRef.current.focus();
@@ -99,26 +134,21 @@ export default function Home() {
     const text = chatInput.trim();
     if (!text) return;
 
-    // append user message
     setMessages((m) => [...m, { from: "user", text }]);
     setChatInput("");
 
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ text }),
       });
 
       let botReply = "";
       if (res.ok) {
-        const ctype = res.headers.get("content-type") || "";
-        if (ctype.includes("application/json")) {
-          const data = await res.json();
-          botReply = data.reply || data.message || data.text || JSON.stringify(data);
-        } else {
-          botReply = await res.text();
-        }
+        const data = await res.json();
+        botReply = data.reply || data.message || data.text || JSON.stringify(data);
       } else {
         botReply = `Error: ${res.statusText || res.status}`;
       }
@@ -135,6 +165,20 @@ export default function Home() {
     }
   }
 
+  const motivations = [
+    "Nice work — keep the momentum going!",
+    "Great streak — you're building consistency!",
+    "Awesome! Small wins add up to big gains.",
+    "You're on fire — keep pushing!",
+  ];
+  
+  const streak = profile?.stats?.current_streak || 0;
+  const motivation = motivations[Math.min(Math.floor(streak / 3), motivations.length - 1)];
+
+  if (loading) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+  }
+
   return (
     <div>
       {/* Home Screen */}
@@ -142,7 +186,7 @@ export default function Home() {
         <div className="header">
           <div className="header-top" style={{ position: 'relative' }}>
             <div>
-              <h1>Hi, Alex! 👋</h1>
+              <h1>Hi, {profile?.full_name || 'User'}! 👋</h1>
               <p>Ready to crush today's workout?</p>
             </div>
             <div
@@ -168,15 +212,15 @@ export default function Home() {
           </div>
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="number">7</div>
+              <div className="number">{profile?.stats?.current_streak || 0}</div>
               <div className="label">Day Streak</div>
             </div>
             <div className="stat-card">
-              <div className="number">4</div>
+              <div className="number">{profile?.stats?.workouts_this_week || 0}</div>
               <div className="label">This Week</div>
             </div>
             <div className="stat-card">
-              <div className="number">1250</div>
+              <div className="number">{profile?.stats?.total_calories || 0}</div>
               <div className="label">Calories</div>
             </div>
           </div>
@@ -187,7 +231,7 @@ export default function Home() {
             <div className="tip-icon">💡</div>
             <div className="tip-content">
               <h3>Pro Tip</h3>
-              <p>{selectedTip || "Focus on form over speed today. Your squat depth has improved 15% this week!"}</p>
+              <p>{selectedTip}</p>
             </div>
           </div>
 
@@ -196,63 +240,53 @@ export default function Home() {
             <div className="view-all">View All</div>
           </div>
 
-          <div className="workout-card">
-            <div className="workout-header">
-              <div>
-                <h3>Full Body Strength</h3>
-                <div className="subtitle">Customized for you</div>
-              </div>
-              <div className="workout-time">23 min</div>
-            </div>
-            <div className="workout-info">
-              <div className="workout-meta">
-                <div className="meta-item">
-                  <span>💪</span>
-                  <span>5 exercises</span>
+          {workout && (
+            <div className="workout-card">
+              <div className="workout-header">
+                <div>
+                  <h3>{workout.title}</h3>
+                  <div className="subtitle">{workout.description}</div>
                 </div>
-                <div className="meta-item">
-                  <span>🔥</span>
-                  <span>240 cal</span>
-                </div>
+                <div className="workout-time">{workout.total_time}</div>
               </div>
-              <button className="start-btn" onClick={() => showScreen("workout")}>
-                <span>▶</span>
-                Start Workout
-              </button>
+              <div className="workout-info">
+                <div className="workout-meta">
+                  <div className="meta-item">
+                    <span>💪</span>
+                    <span>{workout.exercises.length} exercises</span>
+                  </div>
+                  <div className="meta-item">
+                    <span>🔥</span>
+                    <span>{workout.total_calories} cal</span>
+                  </div>
+                </div>
+                <button className="start-btn" onClick={() => showScreen("workout")}>
+                  <span>▶</span>
+                  Start Workout
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="section-header">
             <h2>This Week</h2>
           </div>
           <div className="week-progress">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
-              <div
-                className="day-item"
-                key={d}
-                onMouseEnter={() => setHoveredDay(i)}
-                onMouseLeave={() => setHoveredDay(null)}
-                onFocus={() => setHoveredDay(i)}
-                onBlur={() => setHoveredDay(null)}
-                tabIndex={0}
-              >
-                <div className={`day-box ${i < 4 ? "completed" : "incomplete"}`}>{i < 4 ? "✓" : ""}</div>
-                <div className={`day-label ${i < 4 ? "completed" : ""}`}>{d}</div>
-
-                {hoveredDay === i && (
-                  <div className="day-tooltip" role="dialog" aria-label={`${d} workouts`}>
-                    <div className="tooltip-day">{d}</div>
-                    <ul>
-                      {weekLogs[i] && weekLogs[i].length > 0 ? (
-                        weekLogs[i].map((ex, idx) => <li key={idx}>{ex}</li>)
-                      ) : (
-                        <li className="muted">No workouts</li>
-                      )}
-                    </ul>
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => {
+              const isCompleted = profile?.week_activity?.[i] || false;
+              return (
+                <div
+                  className="day-item"
+                  key={d}
+                  tabIndex={0}
+                >
+                  <div className={`day-box ${isCompleted ? "completed" : "incomplete"}`}>
+                    {isCompleted ? "✓" : ""}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className={`day-label ${isCompleted ? "completed" : ""}`}>{d}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -261,8 +295,8 @@ export default function Home() {
       <div className={`screen ${activeScreen === "workout" ? "" : "hidden"}`} id="workout-screen">
         <div className="header">
           <div className="header-top">
-            <h1>Full Body Strength</h1>
-            <p>5 exercises • 23 minutes • 240 calories</p>
+            <h1>{workout?.title || "Workout"}</h1>
+            <p>{exercises.length} exercises • {workout?.total_time} • {workout?.total_calories} calories</p>
           </div>
         </div>
 
@@ -280,7 +314,7 @@ export default function Home() {
                   <div className="exercise-meta">
                     <span>{ex.reps}</span>
                     <span style={{ color: "#10b981" }}>• {ex.time}</span>
-                    <span style={{ color: "#f97316" }}>• {ex.cal} cal</span>
+                    <span style={{ color: "#f97316" }}>• {ex.calories} cal</span>
                   </div>
                 </div>
                 <div className="play-icon">▶</div>
@@ -289,7 +323,7 @@ export default function Home() {
           </div>
         </div>
 
-        <button className="complete-btn" onClick={() => showScreen("home")}>Complete Workout</button>
+        <button className="complete-btn" onClick={completeWorkout}>Complete Workout</button>
       </div>
 
       {/* Progress Screen */}
@@ -301,12 +335,12 @@ export default function Home() {
             <div className="stats-cards">
               <div className="stat-box green">
                 <div className="icon" style={{ color: "#10b981" }}>💪</div>
-                <div className="value">4</div>
+                <div className="value">{profile?.stats?.workouts_this_week || 0}</div>
                 <div className="label">Workouts</div>
               </div>
               <div className="stat-box orange">
                 <div className="icon" style={{ color: "#f97316" }}>🔥</div>
-                <div className="value">1250</div>
+                <div className="value">{profile?.stats?.total_calories || 0}</div>
                 <div className="label">Calories</div>
               </div>
               <div className="stat-box blue">
@@ -320,7 +354,7 @@ export default function Home() {
                 <div className="label">Performance</div>
               </div>
             </div>
-          </div> 
+          </div>
         </div>
       </div>
 
@@ -370,8 +404,8 @@ export default function Home() {
         <div className="profile-header">
           <div className="avatar">👤</div>
           <div className="profile-info">
-            <h1>Alex Johnson</h1>
-            <p>Member since Jan 2025</p>
+            <h1>{profile?.full_name || 'User'}</h1>
+            <p>Member since {profile?.member_since || 'Jan 2025'}</p>
           </div>
         </div>
 
@@ -380,15 +414,15 @@ export default function Home() {
             <h2>Goals</h2>
             <div className="info-row">
               <span className="label">Weight Goal</span>
-              <span className="value">165 lbs</span>
+              <span className="value">{profile?.goals?.weight_goal || 165} lbs</span>
             </div>
             <div className="info-row">
               <span className="label">Weekly Workouts</span>
-              <span className="value">5 days</span>
+              <span className="value">{profile?.goals?.weekly_workout_goal || 5} days</span>
             </div>
             <div className="info-row">
               <span className="label">Focus Area</span>
-              <span className="value">Strength</span>
+              <span className="value">{profile?.goals?.focus_area || 'Strength'}</span>
             </div>
           </div>
 
@@ -397,15 +431,15 @@ export default function Home() {
             <div className="achievements">
               <div className="achievement">
                 <div className="achievement-icon yellow">🏆</div>
-                <div className="achievement-label">7 Day Streak</div>
+                <div className="achievement-label">{profile?.stats?.current_streak || 0} Day Streak</div>
               </div>
               <div className="achievement">
                 <div className="achievement-icon green">💪</div>
-                <div className="achievement-label">50 Workouts</div>
+                <div className="achievement-label">{profile?.stats?.total_workouts || 0} Workouts</div>
               </div>
               <div className="achievement">
                 <div className="achievement-icon purple">🔥</div>
-                <div className="achievement-label">5K Calories</div>
+                <div className="achievement-label">{Math.floor((profile?.stats?.total_calories || 0) / 1000)}K Calories</div>
               </div>
             </div>
           </div>
@@ -441,7 +475,6 @@ export default function Home() {
           className={`nav-item ${activeScreen === "chat" ? "active" : ""}`}
           onClick={() => showScreen("chat")}
         >
-          {/* chat bubble icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"

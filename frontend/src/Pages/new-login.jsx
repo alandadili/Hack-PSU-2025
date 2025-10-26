@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Style/NewLogin.css";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "http://172.66.0.96:8000";
 
 export default function NewLogin({ onAuth }) {
   const [isRegister, setIsRegister] = useState(false);

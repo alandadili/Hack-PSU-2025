@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../Style/Home.css";
 
-const API_URL = "http://localhost:8000";
+const API_URL = "http://172.66.0.96:8000";
 
 const proTips = [
   "Warm up for 5–10 minutes before jumping into intense exercise to reduce injury risk.",

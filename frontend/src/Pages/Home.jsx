@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../Style/Home.css";
 
-const API_URL = "http://localhost:8000";
+const API_URL = "http://0.0.0.0:8000";
 
 export default function Home() {
   const [activeScreen, setActiveScreen] = useState("home");

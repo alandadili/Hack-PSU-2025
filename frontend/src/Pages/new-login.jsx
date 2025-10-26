@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../Style/NewLogin.css";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
@@ -6,19 +7,19 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 export default function NewLogin({ onAuth }) {
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState("");
-  const [sex, setSex] = useState("");
+  const [gender, setGender] = useState("");
   const [age, setAge] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [authed, setAuthed] = useState(false);
+  const navigate = useNavigate();
 
   function toggleMode() {
     setIsRegister((v) => !v);
     setError("");
     setName("");
-    setSex("");
+    setGender("");
     setAge("");
      setUsername("");
     setPassword("");
@@ -27,7 +28,7 @@ export default function NewLogin({ onAuth }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    if (!username || !password || (isRegister && (!name || !sex || !age))) {
+    if (!username || !password || (isRegister && (!name || !gender || !age))) {
       setError("Please fill required fields.");
       return;
     }
@@ -36,7 +37,7 @@ export default function NewLogin({ onAuth }) {
     try {
       const url = isRegister ? `${API_BASE}/register` : `${API_BASE}/login`;
       const body = isRegister
-        ? { name, username, password, sex, age }
+        ? { name, username, password, gender, age }
         : { username, password }; // match your backend shape
 
       const res = await fetch(url, {
@@ -55,8 +56,9 @@ export default function NewLogin({ onAuth }) {
 
       // Backend likely sets HttpOnly cookie. Call /me or use returned username.
       const returnedUsername = data.username || username; // avoid shadowing state 'username'
-      if (onAuth) onAuth(returnedUsername);
-      setAuthed(true);
+  if (onAuth) onAuth(returnedUsername);
+  // navigate to home page
+  navigate("/home");
     } catch (err) {
       setError("Network error: " + (err.message || "unable to connect"));
     } finally {
@@ -64,16 +66,7 @@ export default function NewLogin({ onAuth }) {
     }
   }
 
-  if (authed) {
-    return (
-      <div className="phone-container placeholder-app">
-        <div className="placeholder-content">
-          <h2>Logged in</h2>
-          <p>You are authenticated. Close this screen or continue to the app.</p>
-        </div>
-      </div>
-    );
-  }
+  // no placeholder; successful auth navigates to /home
 
   return (
     <div className="auth-screen">
@@ -99,8 +92,8 @@ export default function NewLogin({ onAuth }) {
 
             {isRegister && (
               <div id="additional-fields">
-                <select value={sex} onChange={(e) => setSex(e.target.value)} required>
-                  <option value="">Select Sex</option>
+                <select value={gender} onChange={(e) => setGender(e.target.value)} required>
+                  <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>

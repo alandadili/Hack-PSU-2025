@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException, Request, Body, Response, Depends
+from fastapi import FastAPI, HTTPException, Request, Body, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import uuid
 import time
+from mongoConnection import AuthUser
 
 app = FastAPI()
 
@@ -17,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Simple in-memory sessionion store (for dev). Replace with DB/redis for production.
+# Simple in-memory session store (for development)
 SESSIONS: dict = {}
 SESSION_EXPIRY_SECONDS = 60 * 60 * 24  # 1 day
 
@@ -31,12 +32,8 @@ def _get_session(sid: str) -> Optional[dict]:
     session = SESSIONS.get(sid)
     if not session:
         return None
-    # expire cleanup
     if session["expires_at"] < time.time():
-        try:
-            del SESSIONS[sid]
-        except KeyError:
-            pass
+        SESSIONS.pop(sid, None)
         return None
     return session
 
@@ -44,7 +41,14 @@ def _destroy_session(sid: str):
     SESSIONS.pop(sid, None)
 
 async def get_current_user(request: Request):
-    sid = request.cookies.get("session_id")
+    sid = None
+    auth = request.headers.get("Authorization")
+    if auth and auth.lower().startswith("bearer "):
+        sid = auth.split(None, 1)[1].strip()
+    if not sid:
+        sid = request.headers.get("X-Session")
+    if not sid:
+        sid = request.cookies.get("session_id")
     if not sid:
         raise HTTPException(status_code=401, detail="Not authenticated")
     session = _get_session(sid)
@@ -68,11 +72,11 @@ async def login(payload: dict = Body(...)):
     if not username or not password:
         raise HTTPException(status_code=400, detail="username and password required")
 
-    # Replace with real authenticator / DB check
-    if (authenticate(username, password)):
+    if authenticate(username, password):
         sid = _create_session(username)
-        response = JSONResponse(content={"message": "Login successful", "username": username})
-        # For local dev secure=False. Set secure=True when using HTTPS.
+        response = JSONResponse(
+            content={"message": "Login successful", "username": username, "session_id": sid}
+        )
         response.set_cookie(
             key="session_id",
             value=sid,
@@ -99,5 +103,14 @@ async def me(username: str = Depends(get_current_user)):
     return {"username": username}
 
 def authenticate(username: str, password: str) -> bool:
-    # TODO make real autahentator with DB
-    return username == "test" and password == "test" 
+    """
+    Simple username/password authentication (no encryption).
+    """
+    try:
+        user = AuthUser.objects(username=username).first()
+        if not user:
+            return False
+        # Compare plain text passwords
+        return password == user.password
+    except Exception:
+        return False

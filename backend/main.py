@@ -5,10 +5,13 @@ from typing import Optional
 import uuid
 import time
 from datetime import datetime
+from fastapi.staticfiles import StaticFiles
 from mongoConnection import AuthUsers, UserProfile, Workout, Exercise, WorkoutHistory
 from chatbot import handle_user_message
 
 app = FastAPI()
+
+app.mount("/", StaticFiles(directory="../frontend/build", html=True), name="frontend")
 
 origins = [
     "http://localhost:3000",

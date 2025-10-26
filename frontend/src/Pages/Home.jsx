@@ -220,26 +220,7 @@ export default function Home() {
                 <div className="label">Performance</div>
               </div>
             </div>
-          </div>
-
-          <div className="muscle-diagram">
-            <h2>Muscle Development</h2>
-            <div className="body-container">
-              <div className="body-outline">
-                <div className="muscle-group muscle-back" title="Back"></div>
-                <div className="muscle-group muscle-chest" title="Chest"></div>
-                <div className="muscle-group muscle-arms" title="Arms">
-                  <div className="muscle-arm"></div>
-                  <div className="muscle-arm"></div>
-                </div>
-                <div className="muscle-group muscle-abs" title="Core/Abs"></div>
-                <div className="muscle-group muscle-legs" title="Legs">
-                  <div className="muscle-leg"></div>
-                  <div className="muscle-leg"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </div> 
         </div>
       </div>
 

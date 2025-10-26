@@ -295,7 +295,7 @@ export default function Home() {
       {/* Progress Screen */}
       <div className={`screen ${activeScreen === "progress" ? "" : "hidden"}`} id="progress-screen">
         <div className="content">
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: "#1f2937" }}>Your Progress</h1>
+          <h1 className="page-title">Your Progress</h1>
           <div className="progress-card">
             <h2>This Week</h2>
             <div className="stats-cards">
@@ -346,48 +346,41 @@ export default function Home() {
       {/* Chat Screen */}
       <div className={`screen ${activeScreen === "chat" ? "" : "hidden"}`} id="chat-screen">
         <div className="header">
-          <h1>Coach Bot</h1>
-          <p>Ask for tips or workout guidance</p>
+          <div className="header-top">
+            <h1>Coach Bot</h1>
+            <p>Ask for tips or workout guidance</p>
+          </div>
         </div>
 
-        <div className="content" style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 120 }}>
-          <div className="chat-messages" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {messages.length === 0 && <div className="muted">Say hi to the coach — ask anything about workouts.</div>}
+        <div className="content chat-content">
+          <div className="chat-messages">
+            {messages.length === 0 && (
+              <div className="muted">
+                <span className="muted-icon" aria-hidden="true">💬</span>
+                <div className="muted-text">Say hi to the coach — ask anything about workouts.</div>
+              </div>
+            )}
             {messages.map((m, i) => (
               <div
                 key={i}
                 className={`chat-message ${m.from === "user" ? "chat-user" : "chat-bot"}`}
-                style={{
-                  alignSelf: m.from === "user" ? "flex-end" : "flex-start",
-                  background: m.from === "user" ? "#10b981" : "#f3f4f6",
-                  color: m.from === "user" ? "white" : "#1f2937",
-                  padding: "8px 12px",
-                  borderRadius: 12,
-                  maxWidth: "80%",
-                }}
               >
                 {m.text}
               </div>
             ))}
           </div>
 
-          <form onSubmit={sendChatMessage} style={{ marginTop: "auto", display: "flex", gap: 8 }}>
+          <form onSubmit={sendChatMessage} className="chat-form">
             <textarea
               ref={inputRef}
+              className="chat-input"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message and press Enter to send"
-              style={{ flex: 1, minHeight: 44, borderRadius: 10, padding: 8 }}
             />
-            <button
-              type="submit"
-              className="send-btn"
-              style={{ alignSelf: "flex-end", height: 44, width: "auto", padding: "0 12px" }}
-            >
-               Send
-             </button>
-           </form>
+            <button type="submit" className="send-btn">Send</button>
+          </form>
         </div>
       </div>
 

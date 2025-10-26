@@ -37,6 +37,21 @@ export default function Home() {
     "Fuel with a small snack 30–60 minutes before a workout for steady energy.",
   ];
 
+  // Map exercise to a color circle (used instead of images)
+  function getExerciseColor(title, idx) {
+    const key = (title || "").toLowerCase();
+    if (key.includes("push")) return "#10b981"; // theme green
+    if (key.includes("squat")) return "#f97316"; // theme orange
+    if (key.includes("plank")) return "#3b82f6"; // theme blue
+    if (key.includes("lunge")) return "#a855f7"; // theme purple
+    if (key.includes("mountain")) return "#06b6d4"; // theme teal
+    if (key.includes("jump")) return "#60a5fa"; // light blue
+    if (key.includes("burpee")) return "#f59e0b"; // yellow/orange
+    // fallback cycle of theme colors
+    const fallback = ["#3b82f6", "#10b981", "#f97316", "#a855f7", "#06b6d4"];
+    return fallback[idx % fallback.length];
+  }
+
   // Fetch user data on mount
   useEffect(() => {
     fetchUserData();
@@ -350,6 +365,13 @@ export default function Home() {
                 className={`exercise-item ${ex.done ? "completed" : ""}`}
                 onClick={() => toggleExercise(idx)}
               >
+                <div
+                  className="exercise-icon"
+                  style={{ background: getExerciseColor(ex.title, idx) }}
+                  role="img"
+                  aria-label={ex.title}
+                  title={ex.title}
+                />
                 <div className={`checkbox ${ex.done ? "checked" : ""}`}>{ex.done ? "✓" : ""}</div>
                 <div className="exercise-details">
                   <h3>{ex.title}</h3>

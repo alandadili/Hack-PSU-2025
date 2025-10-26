@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "../Style/Home.css";
 
 export default function Home() {
-  const [activeScreen, setActiveScreen] = useState("home"); // home, workout, progress, profile
+  const [activeScreen, setActiveScreen] = useState("home"); // home, workout, progress, profile, chat
   const [exercises, setExercises] = useState([
     { id: 1, title: "Push-ups", reps: "3x12", time: "5 min", cal: 45, done: false },
     { id: 2, title: "Squats", reps: "3x15", time: "6 min", cal: 60, done: false },
@@ -10,6 +10,11 @@ export default function Home() {
     { id: 4, title: "Lunges", reps: "3x10", time: "5 min", cal: 50, done: false },
     { id: 5, title: "Mountain Climbers", reps: "3x20", time: "4 min", cal: 55, done: false },
   ]);
+
+  // Chat state
+  const [messages, setMessages] = useState([]); // {from: 'user'|'bot', text}
+  const [chatInput, setChatInput] = useState("");
+  const inputRef = useRef(null);
 
   function showScreen(name) {
     setActiveScreen(name);
@@ -21,6 +26,53 @@ export default function Home() {
       copy[index] = { ...copy[index], done: !copy[index].done };
       return copy;
     });
+  }
+
+  useEffect(() => {
+    if (activeScreen === "chat" && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [activeScreen]);
+
+  async function sendChatMessage(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const text = chatInput.trim();
+    if (!text) return;
+
+    // append user message
+    setMessages((m) => [...m, { from: "user", text }]);
+    setChatInput("");
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+
+      let botReply = "";
+      if (res.ok) {
+        const ctype = res.headers.get("content-type") || "";
+        if (ctype.includes("application/json")) {
+          const data = await res.json();
+          botReply = data.reply || data.message || data.text || JSON.stringify(data);
+        } else {
+          botReply = await res.text();
+        }
+      } else {
+        botReply = `Error: ${res.statusText || res.status}`;
+      }
+      setMessages((m) => [...m, { from: "bot", text: botReply }]);
+    } catch (err) {
+      setMessages((m) => [...m, { from: "bot", text: "Network error: unable to reach server." }]);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage(e);
+    }
   }
 
   return (
@@ -108,7 +160,7 @@ export default function Home() {
       {/* Workout Screen */}
       <div className={`screen ${activeScreen === "workout" ? "" : "hidden"}`} id="workout-screen">
         <div className="header">
-          <div className="header-top">  
+          <div className="header-top">
             <h1>Full Body Strength</h1>
             <p>5 exercises • 23 minutes • 240 calories</p>
           </div>
@@ -141,9 +193,9 @@ export default function Home() {
       </div>
 
       {/* Progress Screen */}
-      <div className={`screen ${activeScreen === "progress" ? "" : "hidden"}`} id="progress-screen">  
-        <div className="content">  
-            <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: "#1f2937" }}>Your Progress</h1>  
+      <div className={`screen ${activeScreen === "progress" ? "" : "hidden"}`} id="progress-screen">
+        <div className="content">
+          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: "#1f2937" }}>Your Progress</h1>
           <div className="progress-card">
             <h2>This Week</h2>
             <div className="stats-cards">
@@ -191,14 +243,62 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Chat Screen */}
+      <div className={`screen ${activeScreen === "chat" ? "" : "hidden"}`} id="chat-screen">
+        <div className="header">
+          <h1>Coach Bot</h1>
+          <p>Ask for tips or workout guidance</p>
+        </div>
+
+        <div className="content" style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 120 }}>
+          <div className="chat-messages" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {messages.length === 0 && <div className="muted">Say hi to the coach — ask anything about workouts.</div>}
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`chat-message ${m.from === "user" ? "chat-user" : "chat-bot"}`}
+                style={{
+                  alignSelf: m.from === "user" ? "flex-end" : "flex-start",
+                  background: m.from === "user" ? "#10b981" : "#f3f4f6",
+                  color: m.from === "user" ? "white" : "#1f2937",
+                  padding: "8px 12px",
+                  borderRadius: 12,
+                  maxWidth: "80%",
+                }}
+              >
+                {m.text}
+              </div>
+            ))}
+          </div>
+
+          <form onSubmit={sendChatMessage} style={{ marginTop: "auto", display: "flex", gap: 8 }}>
+            <textarea
+              ref={inputRef}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message and press Enter to send"
+              style={{ flex: 1, minHeight: 44, borderRadius: 10, padding: 8 }}
+            />
+            <button
+              type="submit"
+              className="send-btn"
+              style={{ alignSelf: "flex-end", height: 44, width: "auto", padding: "0 12px" }}
+            >
+               Send
+             </button>
+           </form>
+        </div>
+      </div>
+
       {/* Profile Screen */}
       <div className={`screen ${activeScreen === "profile" ? "" : "hidden"}`} id="profile-screen">
         <div className="profile-header">
-            <div className="avatar">👤</div>
-            <div className="profile-info">
-              <h1>Alex Johnson</h1>
-              <p>Member since Jan 2025</p>
-            </div>
+          <div className="avatar">👤</div>
+          <div className="profile-info">
+            <h1>Alex Johnson</h1>
+            <p>Member since Jan 2025</p>
+          </div>
         </div>
 
         <div className="content">
@@ -262,6 +362,13 @@ export default function Home() {
         >
           <svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
           <span>Progress</span>
+        </div>
+        <div
+          className={`nav-item ${activeScreen === "chat" ? "active" : ""}`}
+          onClick={() => showScreen("chat")}
+        >
+          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M21 6h-2v9H7v2a1 1 0 0 1-1 1H4l-3 3V6a1 1 0 0 1 1-1h20a1 1 0 0 1 1 1z"/></svg>
+          <span>Chat</span>
         </div>
         <div
           className={`nav-item ${activeScreen === "profile" ? "active" : ""}`}

@@ -8,4 +8,9 @@ class User(Document):
     age = IntField()
     role = StringField()
 
+class AuthUser(Document):
+    username = StringField(required=True, unique=True)
+    password_hash = StringField(required=True)
+    email = StringField()
+
 

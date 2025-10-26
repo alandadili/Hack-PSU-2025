@@ -5,18 +5,14 @@ from typing import Optional
 import uuid
 import time
 from datetime import datetime
-from fastapi.staticfiles import StaticFiles
 from mongoConnection import AuthUsers, UserProfile, Workout, Exercise, WorkoutHistory
 from chatbot import handle_user_message
 
 app = FastAPI()
 
-app.mount("/", StaticFiles(directory="../frontend/build", html=True), name="frontend")
-
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://hack-psu-2025.onrender.com",
+    "http://127.0.0.1:3000"
 ]
 
 app.add_middleware(

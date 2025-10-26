@@ -40,11 +40,6 @@
 graph TD
     A[Frontend: HTML / JS / React] --> B[Backend: Flask API]
     B --> C[Database: MongoDB]
-📸 Screenshots / GIFs
-
-![alt text](image.png)
-![alt text](image-1.png)
-![alt text](image-2.png)
 
 🚀 Quick Start
 Backend
@@ -89,6 +84,7 @@ npm run build   # if using React
 npm install -g serve
 serve -s build
 # Or serve static HTML/JS directly via web server
+
 🤝 Contributing
 We ❤️ contributions!
 

@@ -15,6 +15,66 @@ export default function Home() {
   const [messages, setMessages] = useState([]); // {from: 'user'|'bot', text}
   const [chatInput, setChatInput] = useState("");
   const inputRef = useRef(null);
+  // UI state for fire tooltip
+  const [showFireTooltip, setShowFireTooltip] = useState(false);
+  const [streak] = useState(7); // you can derive this from backend/user data later
+
+  const motivations = [
+    "Nice work — keep the momentum going!",
+    "Great streak — you're building consistency!",
+    "Awesome! Small wins add up to big gains.",
+    "You're on fire — keep pushing!",
+  ];
+  const motivation = motivations[Math.min(Math.floor(streak / 3), motivations.length - 1)];
+
+  // Pro tips to show on the home screen (choose one randomly on login)
+  const proTips = [
+    "Warm up for 5–10 minutes before jumping into intense exercise to reduce injury risk.",
+    "Focus on controlled movements — quality beats quantity every time.",
+    "Consistency matters more than intensity; stick to a routine you can maintain.",
+    "Mix strength and cardio for balanced fitness and better recovery.",
+    "Hydrate before, during, and after workouts to support performance and recovery.",
+    "Prioritize sleep — it’s when your body rebuilds and gets stronger.",
+    "Progressive overload: gradually increase reps, sets or weight to keep improving.",
+    "Form first — use mirrors or record yourself to check technique.",
+    "Include mobility work to improve range of motion and reduce soreness.",
+    "Fuel with a small snack 30–60 minutes before a workout for steady energy.",
+  ];
+
+  const [selectedTip, setSelectedTip] = useState("");
+
+  // Persist a single pro tip per browser session so it doesn't change when navigating away/back
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("selectedTip");
+      if (stored) {
+        setSelectedTip(stored);
+      } else {
+        const t = proTips[Math.floor(Math.random() * proTips.length)];
+        setSelectedTip(t);
+        sessionStorage.setItem("selectedTip", t);
+      }
+    } catch (err) {
+      // sessionStorage may be unavailable in some contexts; fall back to in-memory behavior
+      const t = proTips[Math.floor(Math.random() * proTips.length)];
+      setSelectedTip(t);
+    }
+  }, []);
+
+  // Hover state for week day tooltips
+  const [hoveredDay, setHoveredDay] = useState(null);
+
+  // Sample week logs: exercises performed each day (index 0 = Mon)
+  // Replace with real data from backend/user history when available
+  const weekLogs = [
+    ["Push-ups — 3x12", "Squats — 3x15"], // Mon
+    ["Plank — 3x30s"],                     // Tue
+    ["Lunges — 3x10", "Mountain Climbers — 3x20"], // Wed
+    [],                                      // Thu (rest)
+    ["Light cardio — 20m"],                // Fri
+    [],                                      // Sat
+    [],                                      // Sun
+  ];
 
   function showScreen(name) {
     setActiveScreen(name);
@@ -80,12 +140,31 @@ export default function Home() {
       {/* Home Screen */}
       <div className={`screen ${activeScreen === "home" ? "" : "hidden"}`} id="home-screen">
         <div className="header">
-          <div className="header-top">
+          <div className="header-top" style={{ position: 'relative' }}>
             <div>
               <h1>Hi, Alex! 👋</h1>
               <p>Ready to crush today's workout?</p>
             </div>
-            <div className="fire-icon">🔥</div>
+            <div
+              className="fire-icon"
+              tabIndex={0}
+              role="button"
+              aria-label="Daily streak"
+              onMouseEnter={() => setShowFireTooltip(true)}
+              onMouseLeave={() => setShowFireTooltip(false)}
+              onFocus={() => setShowFireTooltip(true)}
+              onBlur={() => setShowFireTooltip(false)}
+            >
+              🔥
+            </div>
+
+            {showFireTooltip && (
+              <div className="fire-tooltip" onMouseEnter={() => setShowFireTooltip(true)} onMouseLeave={() => setShowFireTooltip(false)}>
+                <div className="tooltip-title">Daily Streak</div>
+                <div className="tooltip-streak">{streak} days</div>
+                <div className="tooltip-msg">{motivation}</div>
+              </div>
+            )}
           </div>
           <div className="stats-grid">
             <div className="stat-card">
@@ -108,7 +187,7 @@ export default function Home() {
             <div className="tip-icon">💡</div>
             <div className="tip-content">
               <h3>Pro Tip</h3>
-              <p>Focus on form over speed today. Your squat depth has improved 15% this week!</p>
+              <p>{selectedTip || "Focus on form over speed today. Your squat depth has improved 15% this week!"}</p>
             </div>
           </div>
 
@@ -148,9 +227,30 @@ export default function Home() {
           </div>
           <div className="week-progress">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
-              <div className="day-item" key={d}>
+              <div
+                className="day-item"
+                key={d}
+                onMouseEnter={() => setHoveredDay(i)}
+                onMouseLeave={() => setHoveredDay(null)}
+                onFocus={() => setHoveredDay(i)}
+                onBlur={() => setHoveredDay(null)}
+                tabIndex={0}
+              >
                 <div className={`day-box ${i < 4 ? "completed" : "incomplete"}`}>{i < 4 ? "✓" : ""}</div>
                 <div className={`day-label ${i < 4 ? "completed" : ""}`}>{d}</div>
+
+                {hoveredDay === i && (
+                  <div className="day-tooltip" role="dialog" aria-label={`${d} workouts`}>
+                    <div className="tooltip-day">{d}</div>
+                    <ul>
+                      {weekLogs[i] && weekLogs[i].length > 0 ? (
+                        weekLogs[i].map((ex, idx) => <li key={idx}>{ex}</li>)
+                      ) : (
+                        <li className="muted">No workouts</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -195,7 +295,7 @@ export default function Home() {
       {/* Progress Screen */}
       <div className={`screen ${activeScreen === "progress" ? "" : "hidden"}`} id="progress-screen">
         <div className="content">
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: "#1f2937" }}>Your Progress</h1>
+          <h1 className="page-title">Your Progress</h1>
           <div className="progress-card">
             <h2>This Week</h2>
             <div className="stats-cards">
@@ -227,48 +327,41 @@ export default function Home() {
       {/* Chat Screen */}
       <div className={`screen ${activeScreen === "chat" ? "" : "hidden"}`} id="chat-screen">
         <div className="header">
-          <h1>Coach Bot</h1>
-          <p>Ask for tips or workout guidance</p>
+          <div className="header-top">
+            <h1>Coach Bot</h1>
+            <p>Ask for tips or workout guidance</p>
+          </div>
         </div>
 
-        <div className="content" style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 120 }}>
-          <div className="chat-messages" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {messages.length === 0 && <div className="muted">Say hi to the coach — ask anything about workouts.</div>}
+        <div className="content chat-content">
+          <div className="chat-messages">
+            {messages.length === 0 && (
+              <div className="muted">
+                <span className="muted-icon" aria-hidden="true">💬</span>
+                <div className="muted-text">Say hi to the coach — ask anything about workouts.</div>
+              </div>
+            )}
             {messages.map((m, i) => (
               <div
                 key={i}
                 className={`chat-message ${m.from === "user" ? "chat-user" : "chat-bot"}`}
-                style={{
-                  alignSelf: m.from === "user" ? "flex-end" : "flex-start",
-                  background: m.from === "user" ? "#10b981" : "#f3f4f6",
-                  color: m.from === "user" ? "white" : "#1f2937",
-                  padding: "8px 12px",
-                  borderRadius: 12,
-                  maxWidth: "80%",
-                }}
               >
                 {m.text}
               </div>
             ))}
           </div>
 
-          <form onSubmit={sendChatMessage} style={{ marginTop: "auto", display: "flex", gap: 8 }}>
+          <form onSubmit={sendChatMessage} className="chat-form">
             <textarea
               ref={inputRef}
+              className="chat-input"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message and press Enter to send"
-              style={{ flex: 1, minHeight: 44, borderRadius: 10, padding: 8 }}
             />
-            <button
-              type="submit"
-              className="send-btn"
-              style={{ alignSelf: "flex-end", height: 44, width: "auto", padding: "0 12px" }}
-            >
-               Send
-             </button>
-           </form>
+            <button type="submit" className="send-btn">Send</button>
+          </form>
         </div>
       </div>
 
@@ -348,7 +441,17 @@ export default function Home() {
           className={`nav-item ${activeScreen === "chat" ? "active" : ""}`}
           onClick={() => showScreen("chat")}
         >
-          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M21 6h-2v9H7v2a1 1 0 0 1-1 1H4l-3 3V6a1 1 0 0 1 1-1h20a1 1 0 0 1 1 1z"/></svg>
+          {/* chat bubble icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v14l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+          </svg>
           <span>Chat</span>
         </div>
         <div

@@ -114,6 +114,68 @@ async def login(payload: dict = Body(...)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+
+@app.post("/register")
+async def register(payload: dict = Body(...)):
+    """
+    Register endpoint. Expects JSON: { "username": "...", "password": "...", "email": "...", "full_name": "..." }
+    Creates AuthUsers and a default UserProfile if successful, and returns a session cookie.
+    """
+    try:
+        username = payload.get("username")
+        password = payload.get("password")
+        email = payload.get("email")
+        full_name = payload.get("full_name") or (username.capitalize() if username else "User")
+
+        if not username or not password:
+            raise HTTPException(status_code=400, detail="username and password required")
+
+        # Check for existing username or email
+        existing = AuthUsers.objects(username=username).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Username already exists")
+        if email:
+            existing_email = AuthUsers.objects(email=email).first()
+            if existing_email:
+                raise HTTPException(status_code=409, detail="Email already registered")
+
+        # Create auth user (plain text password for now - improve for prod)
+        new_user = AuthUsers(username=username, password=password, email=email)
+        new_user.save()
+
+        # Create default profile with provided full_name
+        profile = UserProfile(
+            username=username,
+            full_name=full_name,
+            current_streak=0,
+            workouts_this_week=0,
+            total_workouts=0,
+            total_calories=0,
+            week_activity=[False] * 7
+        )
+        profile.save()
+
+        # Create session and return cookie similar to login
+        sid = _create_session(username)
+        response = JSONResponse(content={"message": "Registration successful", "username": username, "session_id": sid})
+        response.set_cookie(
+            key="session_id",
+            value=sid,
+            httponly=True,
+            max_age=SESSION_EXPIRY_SECONDS,
+            samesite="lax",
+            secure=False,
+        )
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Register error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/logout")
 async def logout(request: Request):
     sid = request.cookies.get("session_id")

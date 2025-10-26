@@ -3,6 +3,19 @@ import "../Style/Home.css";
 
 const API_URL = "http://localhost:8000";
 
+const proTips = [
+  "Warm up for 5–10 minutes before jumping into intense exercise to reduce injury risk.",
+  "Focus on controlled movements — quality beats quantity every time.",
+  "Consistency matters more than intensity; stick to a routine you can maintain.",
+  "Mix strength and cardio for balanced fitness and better recovery.",
+  "Hydrate before, during, and after workouts to support performance and recovery.",
+  "Prioritize sleep — it's when your body rebuilds and gets stronger.",
+  "Progressive overload: gradually increase reps, sets or weight to keep improving.",
+  "Form first — use mirrors or record yourself to check technique.",
+  "Include mobility work to improve range of motion and reduce soreness.",
+  "Fuel with a small snack 30–60 minutes before a workout for steady energy.",
+];
+
 export default function Home() {
   const [activeScreen, setActiveScreen] = useState("home");
   const [profile, setProfile] = useState(null);
@@ -17,6 +30,12 @@ export default function Home() {
   
   // UI state
   const [showFireTooltip, setShowFireTooltip] = useState(false);
+
+  // Undo / snackbar state for marking exercises
+  const [undoInfo, setUndoInfo] = useState(null); // { index, prevDone, timeoutId }
+
+  // Confirmation modal for completing workout
+  const [showConfirmComplete, setShowConfirmComplete] = useState(false);
   // profile settings panel state
   const [showSettings, setShowSettings] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -24,18 +43,7 @@ export default function Home() {
 
   const [selectedTip, setSelectedTip] = useState("");
 
-  const proTips = [
-    "Warm up for 5–10 minutes before jumping into intense exercise to reduce injury risk.",
-    "Focus on controlled movements — quality beats quantity every time.",
-    "Consistency matters more than intensity; stick to a routine you can maintain.",
-    "Mix strength and cardio for balanced fitness and better recovery.",
-    "Hydrate before, during, and after workouts to support performance and recovery.",
-    "Prioritize sleep — it's when your body rebuilds and gets stronger.",
-    "Progressive overload: gradually increase reps, sets or weight to keep improving.",
-    "Form first — use mirrors or record yourself to check technique.",
-    "Include mobility work to improve range of motion and reduce soreness.",
-    "Fuel with a small snack 30–60 minutes before a workout for steady energy.",
-  ];
+  
 
   // Map exercise to a color circle (used instead of images)
   function getExerciseColor(title, idx) {
@@ -114,22 +122,47 @@ export default function Home() {
   function toggleExercise(index) {
     setExercises((prev) => {
       const copy = [...prev];
-      copy[index] = { ...copy[index], done: !copy[index].done };
+      const prevDone = !!copy[index].done;
+      copy[index] = { ...copy[index], done: !prevDone };
+
+      // clear any existing undo timer
+      if (undoInfo && undoInfo.timeoutId) {
+        clearTimeout(undoInfo.timeoutId);
+      }
+
+      // show snackbar with undo option
+      const timeoutId = setTimeout(() => {
+        setUndoInfo(null);
+      }, 5000);
+
+      setUndoInfo({ index, prevDone, timeoutId });
+
       return copy;
     });
   }
 
+  function undoToggle() {
+  if (!undoInfo) return;
+  const { index, prevDone, timeoutId } = undoInfo;
+  clearTimeout(timeoutId);
+    setExercises((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], done: prevDone };
+      return copy;
+    });
+    setUndoInfo(null);
+  }
+
   async function completeWorkout() {
     if (!workout) return;
-    
     try {
-      const completedExercises = exercises.map(ex => ex.done);
-      
+      const completedExercises = exercises.map((ex) => ex.done);
+
       const res = await fetch(`${API_URL}/workouts/${workout.id}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ completed_exercises: completedExercises })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ completed_exercises: completedExercises }),
       });
 
       if (res.ok) {
@@ -139,6 +172,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Error completing workout:", err);
+    } finally {
+      setShowConfirmComplete(false);
     }
   }
 
@@ -294,7 +329,6 @@ export default function Home() {
 
           <div className="section-header">
             <h2>Today's Workout</h2>
-            <div className="view-all">View All</div>
           </div>
 
           {workout && (
@@ -347,6 +381,27 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {/* Confirmation modal for completing workout */}
+      {showConfirmComplete && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Complete Workout?</h3>
+            <p>Are you sure you want to mark this workout as complete? This will update your stats.</p>
+            <div className="modal-actions">
+              <button className="btn btn-cancel" onClick={() => setShowConfirmComplete(false)}>Cancel</button>
+              <button className="btn btn-confirm" onClick={completeWorkout}>Yes, complete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Snackbar for undo action */}
+      {undoInfo && (
+        <div className={`snackbar ${undoInfo ? 'visible' : ''}`} role="status">
+          <div className="snackbar-msg">Marked "{exercises[undoInfo.index]?.title}" {exercises[undoInfo.index]?.done ? 'done' : 'undone'}</div>
+          <button className="snackbar-undo" onClick={() => undoToggle()}>Undo</button>
+        </div>
+      )}
 
       {/* Workout Screen */}
       <div className={`screen ${activeScreen === "workout" ? "" : "hidden"}`} id="workout-screen">
@@ -365,13 +420,13 @@ export default function Home() {
                 className={`exercise-item ${ex.done ? "completed" : ""}`}
                 onClick={() => toggleExercise(idx)}
               >
-                <div
-                  className="exercise-icon"
-                  style={{ background: getExerciseColor(ex.title, idx) }}
-                  role="img"
-                  aria-label={ex.title}
-                  title={ex.title}
-                />
+                  <div
+                    className="exercise-icon"
+                    style={{ backgroundColor: getExerciseColor(ex.title, idx), "--ring": getExerciseColor(ex.title, idx) }}
+                    role="img"
+                    aria-label={ex.title}
+                    title={ex.title}
+                  />
                 <div className={`checkbox ${ex.done ? "checked" : ""}`}>{ex.done ? "✓" : ""}</div>
                 <div className="exercise-details">
                   <h3>{ex.title}</h3>

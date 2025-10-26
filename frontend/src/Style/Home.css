@@ -1171,3 +1171,70 @@ body {
     box-shadow: 0 6px 18px rgba(16,185,129,0.08);
     border-color: #10b981;
 }
+
+/* Settings panel */
+.settings-panel {
+    margin-top: 8px;
+    width: 100%;
+    max-width: 480px;
+    position: relative; /* ensure z-index applies */
+    z-index: 999; /* above .bottom-nav (which uses z-index:100) */
+    /* keep the panel visually above the fixed bottom-nav by adding extra bottom spacing */
+    margin-bottom: calc(var(--bottom-nav-height) + 12px);
+}
+
+.settings-row {
+    background: white;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(2,6,23,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Simple toggle switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input { display: none; }
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #e5e7eb;
+    transition: 0.2s;
+    border-radius: 999px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(2,6,23,0.12);
+}
+
+.switch input:checked + .slider {
+    background-color: #10b981;
+}
+
+.switch input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* Dark mode quick rules */
+body.dark-mode { background: #071026; color: #e6eef6; }
+body.dark-mode .screen { background: #071026; }
+body.dark-mode .header { background: linear-gradient(135deg, #065f46 0%, #044b39 100%); }
+body.dark-mode .settings-row { background: #081425; color: #e6eef6; box-shadow: none; }

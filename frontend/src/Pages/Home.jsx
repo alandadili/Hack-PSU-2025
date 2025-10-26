@@ -17,6 +17,10 @@ export default function Home() {
   
   // UI state
   const [showFireTooltip, setShowFireTooltip] = useState(false);
+  // profile settings panel state
+  const [showSettings, setShowSettings] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const settingsPanelRef = useRef(null);
 
   const [selectedTip, setSelectedTip] = useState("");
 
@@ -179,6 +183,44 @@ export default function Home() {
       sendChatMessage(e);
     }
   }
+
+  // Settings handlers
+  function toggleSettings() {
+    setShowSettings((s) => !s);
+  }
+
+  function toggleDarkMode() {
+    const next = !darkMode;
+    setDarkMode(next);
+    try {
+      if (next) document.body.classList.add("dark-mode");
+      else document.body.classList.remove("dark-mode");
+      localStorage.setItem("darkMode", next ? "true" : "false");
+    } catch {}
+  }
+
+  // apply saved dark mode on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("darkMode");
+      if (stored === "true") {
+        setDarkMode(true);
+        document.body.classList.add("dark-mode");
+      }
+    } catch {}
+  }, []);
+
+  // close settings when clicking outside
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!showSettings) return;
+      if (settingsPanelRef.current && !settingsPanelRef.current.contains(e.target)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showSettings]);
 
   const motivations = [
     "Nice work — keep the momentum going!",
@@ -466,7 +508,21 @@ export default function Home() {
             </div>
           </div>
 
-          <button className="settings-btn">Settings</button>
+          <div style={{ position: 'relative' }}>
+            <button className="settings-btn" onClick={toggleSettings} aria-expanded={showSettings}>Settings</button>
+
+            {showSettings && (
+              <div ref={settingsPanelRef} className="settings-panel">
+                <div className="settings-row">
+                  <div>Dark mode</div>
+                  <label className="switch">
+                    <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
+                    <span className="slider" />
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

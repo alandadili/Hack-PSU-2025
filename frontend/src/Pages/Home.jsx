@@ -24,7 +24,7 @@ export default function Home() {
   }
 
   return (
-    <div className="phone-container">
+    <div>
       {/* Home Screen */}
       <div className={`screen ${activeScreen === "home" ? "" : "hidden"}`} id="home-screen">
         <div className="header">
@@ -108,8 +108,10 @@ export default function Home() {
       {/* Workout Screen */}
       <div className={`screen ${activeScreen === "workout" ? "" : "hidden"}`} id="workout-screen">
         <div className="header">
-          <h1>Full Body Strength</h1>
-          <p>5 exercises • 23 minutes • 240 calories</p>
+          <div className="header-top">  
+            <h1>Full Body Strength</h1>
+            <p>5 exercises • 23 minutes • 240 calories</p>
+          </div>
         </div>
 
         <div className="content">
@@ -139,10 +141,9 @@ export default function Home() {
       </div>
 
       {/* Progress Screen */}
-      <div className={`screen ${activeScreen === "progress" ? "" : "hidden"}`} id="progress-screen">
-        <div className="content">
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: "#1f2937" }}>Your Progress</h1>
-
+      <div className={`screen ${activeScreen === "progress" ? "" : "hidden"}`} id="progress-screen">  
+        <div className="content">  
+            <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: "#1f2937" }}>Your Progress</h1>  
           <div className="progress-card">
             <h2>This Week</h2>
             <div className="stats-cards">
@@ -193,11 +194,11 @@ export default function Home() {
       {/* Profile Screen */}
       <div className={`screen ${activeScreen === "profile" ? "" : "hidden"}`} id="profile-screen">
         <div className="profile-header">
-          <div className="avatar">👤</div>
-          <div className="profile-info">
-            <h1>Alex Johnson</h1>
-            <p>Member since Jan 2025</p>
-          </div>
+            <div className="avatar">👤</div>
+            <div className="profile-info">
+              <h1>Alex Johnson</h1>
+              <p>Member since Jan 2025</p>
+            </div>
         </div>
 
         <div className="content">

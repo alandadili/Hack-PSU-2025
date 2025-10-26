@@ -13,3 +13,4 @@ while True:
         break
     response = chat.send_message(message)
     print("Gemini:", response.text)
+    

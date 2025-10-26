@@ -2,3 +2,9 @@
 
 # venv
 backend/.venv
+
+# api keys, credentials, and other related stuff
+backend/.env
+
+# other
+backend/__pycache__/

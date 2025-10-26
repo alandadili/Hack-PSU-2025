@@ -3,8 +3,10 @@ import os
 import re
 import json
 import ctypes
-# import google.generativeai as genai
 from google import genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # attempt to load libcleaner.so from utils folder; provide Python fallback
 _cleaner_lib = None
@@ -52,11 +54,18 @@ def preprocess_text(text: str):
         except Exception:
             pass
     return _preprocess_text_py(text)
+class Chats:
+    def __init__(self):
+        self.chat = None
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    def set_chat(self):
+        self.chat = self.client.chats.create(model="gemini-2.5-pro")
+    def get_chat(self):
+        if not self.chat:
+            self.set_chat()
+        return self.chat
 
-
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-def handle_user_message(user_text: str) -> str:
+async def handle_user_message(user_text: str) -> str:
     print("[DEBUG] 1" + user_text)
     # clean input
     cleaned, word_count = preprocess_text(user_text)
@@ -66,10 +75,21 @@ def handle_user_message(user_text: str) -> str:
     if word_count > 100:
         return "Your message is too long. Please shorten it."
 
-    # use model object and send_message
+    # use model object and send_message with timeout
     try:
-        chat= client.chats.create(model="gemini-2.5-pro")
-        response = chat.send_message(cleaned)
+        import asyncio
+        from concurrent.futures import TimeoutError
+        
+        chats = Chats()
+        chat = chats.get_chat()
+        
+        # Wrap the synchronous call in an executor to prevent blocking
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: chat.send_message(cleaned)  # 120 second timeout
+        )
+        
         # normalize response
         if hasattr(response, "text") and response.text:
             return response.text
@@ -81,6 +101,9 @@ def handle_user_message(user_text: str) -> str:
                 return response["candidates"][0].get("output", "") if response["candidates"] else ""
         # fallback str
         return str(response)
+    except TimeoutError:
+        print("[ERROR] Gemini request timed out")
+        return "Sorry, the request timed out. Please try again."
     except Exception as e:
         print("[ERROR] Gemini request failed:", e)
         return "Sorry, an error occurred while contacting the language model."

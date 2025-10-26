@@ -886,3 +886,23 @@ body {
 .complete-btn:hover {
     background: #059669;
 }
+
+.send-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    height: 44px;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-btn:hover {
+    background: #059669;
+}

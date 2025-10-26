@@ -44,10 +44,10 @@ export default function Home() {
     setChatInput("");
 
     try {
-      const res = await fetch("/chat", {
+      const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ text }),
       });
 
       let botReply = "";

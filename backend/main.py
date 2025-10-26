@@ -4,7 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import uuid
 import time
-from mongoConnection import AuthUser
+# todo uncomment
+#from mongoConnection import AuthUser
+from chatbot import handle_user_message, Chats
 
 app = FastAPI()
 
@@ -69,10 +71,14 @@ async def login(payload: dict = Body(...)):
     username = payload.get("username") or payload.get("email")
     password = payload.get("password")
 
+    chats = Chats()
+    chats.set_chat()
+
     if not username or not password:
         raise HTTPException(status_code=400, detail="username and password required")
 
-    if authenticate(username, password):
+    # TODO: Replace with authentication
+    if auth(username, password):
         sid = _create_session(username)
         response = JSONResponse(
             content={"message": "Login successful", "username": username, "session_id": sid}
@@ -102,6 +108,26 @@ async def logout(request: Request):
 async def me(username: str = Depends(get_current_user)):
     return {"username": username}
 
+
+# chatting
+@app.post("/chat")
+async def chat(request: Request):
+    try:
+        body = await request.json()
+        text = body.get("text")
+        if not text:
+            raise HTTPException(status_code=400, detail="Message text is required")
+            
+        # Set a 2-minute timeout for the entire operation
+        response = await handle_user_message(text)
+        return {"response": response}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception as e:
+        print(f"[ERROR] Chat request failed: {str(e)}")
+        raise HTTPException(status_code=504, detail="Request timed out or failed to process")
+    
+
 def authenticate(username: str, password: str) -> bool:
     """
     Simple username/password authentication (no encryption).
@@ -114,3 +140,6 @@ def authenticate(username: str, password: str) -> bool:
         return password == user.password
     except Exception:
         return False
+    
+def auth(username: str, password: str) -> bool:
+    return username == "test" and password == "test"

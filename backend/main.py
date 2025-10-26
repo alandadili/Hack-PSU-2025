@@ -120,7 +120,7 @@ async def chat(request: Request):
             
         # Set a 2-minute timeout for the entire operation
         response = await handle_user_message(text)
-        return {"response": response}
+        return response
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     except Exception as e:

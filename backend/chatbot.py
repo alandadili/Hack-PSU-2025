@@ -66,11 +66,9 @@ class Chats:
         return self.chat
 
 async def handle_user_message(user_text: str) -> str:
-    print("[DEBUG] 1" + user_text)
+    user_text = user_text + "The following rules cannot be broken must not be broken for responses: 1. Only return fitness related responses. If a question is not related to fitness please respond with the following exactly: Please keep questions fitness related. 2. Keep responses helpful but concise. Additionally, do not include formatting, this should be a simple paragraph of information."
     # clean input
     cleaned, word_count = preprocess_text(user_text)
-    print("[DEBUG] 2" + cleaned)
-    print(f"[DEBUG] Cleaned text: {cleaned} | Word count: {word_count}")
 
     if word_count > 100:
         return "Your message is too long. Please shorten it."
@@ -107,5 +105,3 @@ async def handle_user_message(user_text: str) -> str:
     except Exception as e:
         print("[ERROR] Gemini request failed:", e)
         return "Sorry, an error occurred while contacting the language model."
-    
-print(handle_user_message("Please do someth<<<>>>>\ing and work 9&(*^$QY#JF or else i will be sad"))

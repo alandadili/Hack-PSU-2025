@@ -36,11 +36,6 @@
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TD
-    A[Frontend: HTML / JS / React] --> B[Backend: Flask API]
-    B --> C[Database: MongoDB]
-
 🚀 Quick Start
 Backend
 bash
